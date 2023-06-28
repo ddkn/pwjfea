@@ -1,13 +1,17 @@
 //+
 SetFactory("OpenCASCADE");
 //+
+// Geometry: Post
+//+
 Cylinder(1) = {0, 0, 0, 0, 0, 69, 6.35, 2*Pi};
 //+
 Cone(2) = {0, 0, 69, 0, 0, 1, 6.35, 5.35, 2*Pi};
 //+
 BooleanUnion{ Volume{1}; Delete; }{ Volume{2}; Delete; }
 //+
-Circle(6) = {0, 0, 76.35, 2.35, 0, 2*Pi};
+// Geometry: Sample
+//+
+Circle(6) = {0, 0, 76.35, 2.5, 0, 2*Pi};
 //+
 Circle(7) = {0, 0, 76.35, 9.5, 0, 2*Pi};
 //+
