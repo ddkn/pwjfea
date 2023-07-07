@@ -50,7 +50,7 @@ def update_pwj_parameters(
         y: float,
         radius: float,
         **kws: dict) -> None:
-    outfile = kws.setdefault("outfile", "latest.geo")
+    outfile = kws.setdefault("outfile", "output.geo")
     """Updates the pwj radius, and (x, y) position in the geo file"""
     debug = kws.setdefault("debug", False)
 
@@ -104,12 +104,12 @@ def redefine_pwj_curves(geofile: str, curve_loop: str) -> None:
                 continue
             break
 
-    print(f"Using '{curve_loop_new}'")
-    with open("latest.geo", "w") as f:
+    print(f"Using '{curve_loop}'")
+    with open(geofile, "w") as f:
         f.write(geoscript.replace(curve_loop_old, curve_loop))
 
 
-def generate_mesh(geofile: str) -> None:
+def generate_mesh(geofile: str, meshfile: str) -> None:
     curve_loops = iter(PWJ_CURVE_LOOP_DEFITIONS)
     valid_mesh = True
     while valid_mesh:
@@ -120,7 +120,7 @@ def generate_mesh(geofile: str) -> None:
 
         try:
             gmsh.clear()
-            gmsh.open("latest.geo")
+            gmsh.open(geofile)
             break
 
         except Exception as err:
@@ -129,7 +129,7 @@ def generate_mesh(geofile: str) -> None:
             gmsh.finalize()
 
         try:
-            redefine_pwj_curves("latest.geo", next(curve_loops))
+            redefine_pwj_curves(geofile, next(curve_loops))
         except StopIteration:
             valid_mesh = False
             break
@@ -139,7 +139,7 @@ def generate_mesh(geofile: str) -> None:
         exit()
 
     gmsh.model.mesh.generate(3)
-    gmsh.write(f"{args.output}.msh")
+    gmsh.write(meshfile)
 
     gmsh.finalize()
 
@@ -171,6 +171,7 @@ if __name__ == "__main__":
         args.x_position,
         args.y_position,
         args.radius,
+        outfile=f"{args.output}.geo",
         debug=args.debug,
     )
-    generate_mesh("latest.geo")
+    generate_mesh(f"{args.output}.geo", f"{args.output}.msh")
