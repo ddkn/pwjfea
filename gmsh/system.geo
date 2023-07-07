@@ -55,6 +55,6 @@ Physical Volume(2) = {3};
 // Required for volumes in contact
 Coherence;
 
-Physical Surface(13) = {4};
-Physical Surface(14) = {6};
-Physical Surface(15) = {2, 9, 8, 7};
+Physical Surface(1) = {4};
+Physical Surface(2) = {6};
+Physical Surface(3) = {2, 9, 8, 7};
