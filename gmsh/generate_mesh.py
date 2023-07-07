@@ -1,8 +1,148 @@
 #!/usr/bin/env python3
+# Copyright 2023 David Kalliecharan <david@david.science>
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+# DAMAGE.
+
 from argparse import ArgumentParser
 import gmsh
 import re
 from sys import exit
+
+COMPONENT = {
+    "x": 0,
+    "y": 1,
+    "z": 2,
+    "radius": 3,
+    "angle1": 4,
+    "angle2": 5,
+}
+
+PWJ_CURVE_LOOP_DEFITIONS = [
+    "Curve Loop(14) = {15};",
+    "Curve Loop(14) = {16, 15};",
+    "Curve Loop(14) = {15, 17, 16};",
+]
+
+
+def update_pwj_parameters(
+        infile: str,
+        x: float,
+        y: float,
+        radius: float,
+        **kws: dict) -> None:
+    outfile = kws.setdefault("outfile", "latest.geo")
+    """Updates the pwj radius, and (x, y) position in the geo file"""
+    debug = kws.setdefault("debug", False)
+
+    with open(infile, "r") as f:
+        geoscript = f.read()
+
+    for l in geoscript.split('\n'):
+        m = re.match(r"^Circle\(15\).*", l)
+        if m is not None:
+            pwj_str = m.group()
+            continue
+        m = re.match(r"^Circle\(16\).*", l)
+        if m is not None:
+            _, _, _, sample_radius, _, _ = m.group().split("{")[-1].rstrip("};").split(",")
+
+    parameters = pwj_str.split("{")[-1].rstrip("};").split(",")
+    x_old, y_old, z_old, radius_old, angle1_old, angle2_old, = parameters
+    for i, j in zip(["x", "y", "pwj_r", "sample_r"],
+                    (x_old, y_old, radius_old, sample_radius)):
+        print(f"{i} : {j} mm")
+
+    # Update PWJ area with new values
+    pwj_comp = pwj_str.split(",")
+    pwj_comp[COMPONENT["x"]] = pwj_comp[COMPONENT["x"]].replace(x_old, str(x))
+    pwj_comp[COMPONENT["y"]] = pwj_comp[COMPONENT["y"]].replace(y_old, " " + str(y))
+    pwj_comp[COMPONENT["radius"]] = pwj_comp[COMPONENT["radius"]].replace(radius_old, " " + str(radius))
+    pwj_str_updated = ",".join(pwj_comp)
+
+    print()
+    if debug:
+        print(geoscript.replace(pwj_str, pwj_str_updated))
+        exit()
+    else:
+        print(pwj_str_updated)
+
+    with open(outfile, "w") as f:
+        f.write(geoscript.replace(pwj_str, pwj_str_updated))
+
+
+def redefine_pwj_curves(geofile: str, curve_loop: str) -> None:
+    """If intersections for pwj area cause extra curves, update them"""
+    with open(geofile, "r") as f:
+        geoscript = f.read()
+
+    for l in geoscript.split('\n'):
+        m = re.match(r"^Curve Loop\(14\).*", l)
+        if m is not None:
+            curve_loop_old = m.group()
+            # NOTE: Skip first detection is before Boolean:Intersection
+            if curve_loop_old == "Curve Loop(14) = {16};":
+                continue
+            break
+
+    print(f"Using '{curve_loop_new}'")
+    with open("latest.geo", "w") as f:
+        f.write(geoscript.replace(curve_loop_old, curve_loop))
+
+
+def generate_mesh(geofile: str) -> None:
+    curve_loops = iter(PWJ_CURVE_LOOP_DEFITIONS)
+    valid_mesh = True
+    while valid_mesh:
+        gmsh.initialize()
+
+        gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
+        gmsh.option.setNumber("Mesh.MeshSizeFactor", args.size)
+
+        try:
+            gmsh.clear()
+            gmsh.open("latest.geo")
+            break
+
+        except Exception as err:
+            print(err)
+            print(f"Cannot assemble Physical Surface(14), trying another Curve Loop definition")
+            gmsh.finalize()
+
+        try:
+            redefine_pwj_curves("latest.geo", next(curve_loops))
+        except StopIteration:
+            valid_mesh = False
+            break
+
+    if not valid_mesh:
+        print("No valid mesh available. Exiting...")
+        exit()
+
+    gmsh.model.mesh.generate(3)
+    gmsh.write(f"{args.output}.msh")
+
+    gmsh.finalize()
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -26,51 +166,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    gmsh.initialize()
-
-    gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
-    gmsh.option.setNumber("Mesh.MeshSizeFactor", args.size)
-
-    with open(args.file, "r") as f:
-        geoscript = f.read()
-
-    for l in geoscript.split('\n'):
-        m = re.match(r"^Circle\(6\).*", l)
-        if m is not None:
-            pwj_str = m.group()
-            continue
-        m = re.match(r"^Circle\(7\).*", l)
-        if m is not None:
-            _, _, _, sample_radius, _, _ = m.group().split("{")[-1].rstrip("};").split(",")
-
-    x, y, z, pwj_radius, angle1, angle2 = pwj_str.split("{")[-1].rstrip("};").split(",")
-    for i, j in zip(["x", "pwj_r", "sample_r"], (x, pwj_radius, sample_radius)):
-        print(f"{i} : {j} mm")
-
-    pwj_radius_new = args.radius
-    #x_new = float(sample_radius) - pwj_radius_new
-    x_new = args.x_position
-    y_new = args.y_position
-
-    pwj_str_updated = (pwj_str
-        .replace(x, str(x_new), 1)
-        .replace(y, " " + str(y_new), 1)
-        .replace(pwj_radius, str(pwj_radius_new), 1)
+    update_pwj_parameters(
+        args.file,
+        args.x_position,
+        args.y_position,
+        args.radius,
+        debug=args.debug,
     )
-
-    print()
-    if args.debug:
-        print(geoscript.replace(pwj_str, pwj_str_updated))
-        exit()
-    else:
-        print(pwj_str_updated)
-
-    with open("latest.geo", "w") as f:
-        f.write(geoscript.replace(pwj_str, pwj_str_updated))
-
-    gmsh.clear()
-    gmsh.open("latest.geo")
-    gmsh.model.mesh.generate(3)
-    gmsh.write(f"{args.output}.msh")
-
-    gmsh.finalize()
+    generate_mesh("latest.geo")
