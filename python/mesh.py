@@ -37,12 +37,52 @@ COMPONENT = {
     "angle2": 5,
 }
 
-PWJ_CURVE_LOOP_DEFITIONS = [
-    "Curve Loop(14) = {15};",
-    "Curve Loop(14) = {16, 15};",
-    "Curve Loop(14) = {15, 17, 16};",
-]
+PWJ_GEO_FILES = {
+    "center": "system.geo",
+    "negative": {
+        "intersect": "system.x.neg.intersect.geo",
+        "overlap": "system.x.neg.overlap.geo",
+    },
+    "positive": {
+        "intersect": "system.x.pos.intersect.geo",
+        "overlap": "system.x.pos.overlap.geo",
+    },
+}
 
+
+def guess_mesh_file(
+        infile: str,
+        x: float,
+        y: float,
+        radius: float,) -> str:
+    with open(infile, "r") as f:
+        geoscript = f.read()
+
+    for l in geoscript.split('\n'):
+        m = re.match(r"^Circle\(16\).*", l)
+        if m is not None:
+            _, _, _, sample_radius, _, _ = m.group().split("{")[-1].rstrip("};").split(",")
+
+    sample_radius = float(sample_radius)
+    if x < 0:
+        sample_radius *= -1
+        radius *= -1
+
+    # Check how the radius interacts with the sample_radius
+    mesh_select = abs(sample_radius - radius) - abs(x)
+    if mesh_select > 0:
+        return PWJ_GEO_FILES["center"]
+    elif mesh_select < 0:
+        boundary = "overlap"
+    elif mesh_select == 0.0:
+        boundary = "intersect"
+
+    if x < 0:
+        sign = "negative"
+    else:
+        sign = "positive"
+
+    return PWJ_GEO_FILES[sign][boundary]
 
 def update_pwj_parameters(
         infile: str,
