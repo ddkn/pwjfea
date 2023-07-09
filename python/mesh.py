@@ -25,8 +25,10 @@
 
 from argparse import ArgumentParser
 import gmsh
+from pathlib import Path
 import re
 from sys import exit
+
 
 COMPONENT = {
     "x": 0,
@@ -36,6 +38,8 @@ COMPONENT = {
     "angle1": 4,
     "angle2": 5,
 }
+
+MESH_DIR = Path(".").absolute() / "../gmsh"
 
 PWJ_GEO_FILES = {
     "center": "system.geo",
@@ -64,6 +68,9 @@ def guess_mesh_file(
             _, _, _, sample_radius, _, _ = m.group().split("{")[-1].rstrip("};").split(",")
 
     sample_radius = float(sample_radius)
+    if (abs(x) - abs(radius)) >= abs(sample_radius):
+        raise ValueError("Applied boundary is outside of the Sample boundary!")
+
     if x < 0:
         sample_radius *= -1
         radius *= -1
@@ -71,7 +78,7 @@ def guess_mesh_file(
     # Check how the radius interacts with the sample_radius
     mesh_select = abs(sample_radius - radius) - abs(x)
     if mesh_select > 0:
-        return PWJ_GEO_FILES["center"]
+        return MESH_DIR / PWJ_GEO_FILES["center"]
     elif mesh_select < 0:
         boundary = "overlap"
     elif mesh_select == 0.0:
@@ -82,7 +89,7 @@ def guess_mesh_file(
     else:
         sign = "positive"
 
-    return PWJ_GEO_FILES[sign][boundary]
+    return MESH_DIR / PWJ_GEO_FILES[sign][boundary]
 
 def update_pwj_parameters(
         infile: str,
@@ -150,33 +157,13 @@ def redefine_pwj_curves(geofile: str, curve_loop: str) -> None:
 
 
 def generate_mesh(geofile: str, meshfile: str) -> None:
-    curve_loops = iter(PWJ_CURVE_LOOP_DEFITIONS)
-    valid_mesh = True
-    while valid_mesh:
-        gmsh.initialize()
+    gmsh.initialize()
 
-        gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
-        gmsh.option.setNumber("Mesh.MeshSizeFactor", args.size)
+    gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
+    gmsh.option.setNumber("Mesh.MeshSizeFactor", args.size)
 
-        try:
-            gmsh.clear()
-            gmsh.open(geofile)
-            break
-
-        except Exception as err:
-            print(err)
-            print(f"Cannot assemble Physical Surface(14), trying another Curve Loop definition")
-            gmsh.finalize()
-
-        try:
-            redefine_pwj_curves(geofile, next(curve_loops))
-        except StopIteration:
-            valid_mesh = False
-            break
-
-    if not valid_mesh:
-        print("No valid mesh available. Exiting...")
-        exit()
+    gmsh.clear()
+    gmsh.open(geofile)
 
     gmsh.model.mesh.generate(3)
     gmsh.write(meshfile)
@@ -206,8 +193,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    infile = guess_mesh_file(args.file, args.x_position, args.y_position, args.radius)
     update_pwj_parameters(
-        args.file,
+        str(infile),
         args.x_position,
         args.y_position,
         args.radius,
