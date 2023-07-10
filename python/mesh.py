@@ -156,11 +156,11 @@ def redefine_pwj_curves(geofile: str, curve_loop: str) -> None:
         f.write(geoscript.replace(curve_loop_old, curve_loop))
 
 
-def generate_mesh(geofile: str, meshfile: str) -> None:
+def generate_mesh(geofile: str, meshfile: str, size: float) -> None:
     gmsh.initialize()
 
     gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
-    gmsh.option.setNumber("Mesh.MeshSizeFactor", args.size)
+    gmsh.option.setNumber("Mesh.MeshSizeFactor", size)
 
     gmsh.clear()
     gmsh.open(geofile)
