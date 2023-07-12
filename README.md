@@ -63,3 +63,38 @@ Utilizing the *Assembly4* module, we can create a Part that can be assembled wit
 10. Repeat steps 1-2.
 11. *Import Part into assembly* for each part, choosing where to mate parts via LCS parameters you set in 5.
 12. When done, click the *Model* in the assembly and export to a *Step* file
+
+## Running the experiment
+
+```
+cd python
+python3 experiment.py ../gmsh/system.geo --step-size 0.2 --name "experiment_full_sweep"
+```
+
+The data will be output in **paraview/experiment_full_sweep**. You can use Paraview to then view the data as needed, but you will want to fix the `*.pvd` file,
+
+```
+python3 fix_pvd.py ../paraview/experiment_full_sweep/experiment_full_sweep.pvd --vtr 21.167 --step-size 0.2
+```
+
+Then open `experiment_full_sweep_updated.pvd` in ParaView.
+
+### ParaView
+
+To get a value of the sensor overt **time** you need to
+
+* `Apply changes to parameters automatically`
+* Click on the pvd in the properties tree
+* Go to `Coloring` and change the value to **strain(z,z)**
+* Feel free to move and inspect the geometry
+* `Probe Location`
+* For middle of sensor
+  * Set $(x, y, z)$ = (6.35, 0, 42.5)
+* Click on `Select Points On`
+* Click the row in SpreadSheetView
+* Click `Plot Selection over Time`
+* Repeat for these, 
+  * Set $(x, y, z)$ = (6.35, 0, 44.0)
+  * Set $(x, y, z)$ = (6.35, 0, 41.0)
+* You can export to **.tsv** via the SpreadSheetView
+  * **DO NOT** export to CSV, columns have commas in them
