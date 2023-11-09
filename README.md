@@ -89,12 +89,12 @@ To get a value of the sensor over **time** you need to
 * Feel free to move and inspect the geometry
 * `Probe Location`
 * For middle of sensor
-  * Set $(x, y, z)$ = (6.35, 0, 42.5)
+  * Set $(x, y, z)$ = (6.35, 0, 30.0)
 * Click on `Select Points On`
 * Click the row in SpreadSheetView
 * Repeat for these, 
-  * Set $(x, y, z)$ = (6.35, 0, 44.0)
-  * Set $(x, y, z)$ = (6.35, 0, 41.0)
+  * Set $(x, y, z)$ = (6.35, 0, 31.5)
+  * Set $(x, y, z)$ = (6.35, 0, 28.5)
 * Select each Probe Location (CTRL-Click)
   * Right click -> Add Filter -> Common -> Group Datasets
 * Click `Plot Selection over Time`
