@@ -44,7 +44,7 @@ if __name__ == '__main__':
     parser.add_argument("pvdfile", type=str, help="Paraview Data Collection File")
     parser.add_argument("-v", "--vtr", type=float, default=21.167, 
                         help="VTR [mm/s]")
-    parser.add_argument("-s", "--step_size", type=float, default=1, 
+    parser.add_argument("-s", "--step-size", type=float, default=1, 
                         help="Step size [mm]")
 
     args = parser.parse_args()

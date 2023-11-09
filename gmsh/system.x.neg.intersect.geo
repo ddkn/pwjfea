@@ -4,9 +4,9 @@ SetFactory("OpenCASCADE");
 
 // Geometry: PWJ applied area + sample surface
 // PWJ area
-Circle(15) = {-7.0, 0, 76.35, 2.5, 0, 2*Pi};
+Circle(15) = {-7.0, 0, 66.35, 2.5, 0, 2*Pi};
 // Sample boundary
-Circle(16) = {0, 0, 76.35, 9.5, 0, 2*Pi};
+Circle(16) = {0, 0, 66.35, 9.5, 0, 2*Pi};
 
 // Ensure Intersections are handled
 Coherence;
@@ -30,14 +30,14 @@ Recursive Delete {
 }
 
 // Post cutout
-Cylinder(2) = {0, 0, 69-5.35, 0, 0, 5.35, 6.35, 2*Pi};
-Cone(3) = {0, 0, 69, 0, 0, 1, 6.35, 5.35, 2*Pi};
+Cylinder(2) = {0, 0, 59-5.35, 0, 0, 5.35, 6.35, 2*Pi};
+Cone(3) = {0, 0, 59, 0, 0, 1, 6.35, 5.35, 2*Pi};
 BooleanUnion{ Volume{2}; Delete; }{ Volume{3}; Delete; }
 BooleanDifference{ Volume{1}; Delete; }{ Volume{2}; Delete; }
 
 // Post
-Cylinder(2) = {0, 0, 0, 0, 0, 69, 6.35, 2*Pi};
-Cone(3) = {0, 0, 69, 0, 0, 1, 6.35, 5.35, 2*Pi};
+Cylinder(2) = {0, 0, 0, 0, 0, 59, 6.35, 2*Pi};
+Cone(3) = {0, 0, 59, 0, 0, 1, 6.35, 5.35, 2*Pi};
 BooleanUnion{ Volume{2}; Delete; }{ Volume{3}; Delete; }
 
 // Set Attributes for MFEM

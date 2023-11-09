@@ -81,7 +81,7 @@ Then open `experiment_full_sweep_updated.pvd` in ParaView.
 
 ### ParaView
 
-To get a value of the sensor overt **time** you need to
+To get a value of the sensor over **time** you need to
 
 * `Apply changes to parameters automatically`
 * Click on the pvd in the properties tree
@@ -92,9 +92,12 @@ To get a value of the sensor overt **time** you need to
   * Set $(x, y, z)$ = (6.35, 0, 42.5)
 * Click on `Select Points On`
 * Click the row in SpreadSheetView
-* Click `Plot Selection over Time`
 * Repeat for these, 
   * Set $(x, y, z)$ = (6.35, 0, 44.0)
   * Set $(x, y, z)$ = (6.35, 0, 41.0)
+* Select each Probe Location (CTRL-Click)
+  * Right click -> Add Filter -> Common -> Group Datasets
+* Click `Plot Selection over Time`
+* Deselect the features to plot, only select block=1,2,3: strain(z, z)
 * You can export to **.tsv** via the SpreadSheetView
   * **DO NOT** export to CSV, columns have commas in them
