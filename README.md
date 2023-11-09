@@ -1,4 +1,8 @@
-# FEM setup
+# PWJFEA
+
+Finite element analysis of experimental apparatus for pulsed water jet force characterization by modelling a post with a cylindrical sample with an applied force in the z-direction that traverses along the cylindrical sample in the x-direction. This work is related my PhD thesis work for understanding the stress-strain of a forced pulsed water jet. The code here is for reference, and hopefully can help others with their work.
+
+## FEM setup
 
 The most user friendly steps to generate meshes in [gmsh](https://gmsh.info/) for use in [MFEM](https://mfem.org/).
 
